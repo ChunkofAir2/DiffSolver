@@ -1,4 +1,4 @@
-from ops.operators import Operator
+from .operators import Operator
 import jax.numpy as jnp
 from copy import copy
 
@@ -20,7 +20,7 @@ class Laplacian(Operator):
         super().__init__()
         self.dx = dx
 
-    def op(self, y):
+    def op(self, t, y):
         dx = copy(self.dx)
 
         if isinstance(dx, int) or isinstance(dx, float):

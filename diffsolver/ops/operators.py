@@ -1,15 +1,17 @@
 import jax.numpy as jnp
 import jax
 from copy import copy
+from functools import partial
 
 class Operator:
     def __init__(self) -> None:
         pass
 
+    @partial(jax.jit, static_argnums=(0, ))
     def __call__(self, t, y):
-        return self.op(y)
+        return self.op(t, y)
 
-    def op(self, y):
+    def op(self, t, y):
         raise NotImplementedError("need to implement \"op\" fn")
 
 class CombineOp(Operator):
@@ -23,9 +25,9 @@ class CombineOp(Operator):
     def __init__(self, one, two):
         self.one, self.two = one, two
 
-    def op(self, y):
-        one = self.one.op(y)
-        two = self.two.op(y)
+    def op(self, t, y):
+        one = self.one(t, y)
+        two = self.two(t, y)
         return self.double_op(one, two)
     
 class SingleOp(Operator):
@@ -38,8 +40,8 @@ class SingleOp(Operator):
     def __init__(self, one):
         self.one = one
 
-    def op(self, y):
-        one = self.one.op(y)
+    def op(self, t, y):
+        one = self.one(t, y)
         return self.single_op(one)
     
 class Square(SingleOp, op=lambda x: jnp.power(x, 2)):

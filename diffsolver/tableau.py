@@ -3,6 +3,9 @@ from jax import numpy as jnp
 class ButcherTableau:
     def __init__(self, b: jnp.ndarray, c: jnp.ndarray, A: jnp.ndarray):
         self.b = b
+        if b.ndim > 1 :
+            self.b = b[0]
+            self.b2 = b[1]
         self.c = c
         self.A = A
         

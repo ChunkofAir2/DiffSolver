@@ -1,4 +1,4 @@
-from ops.operators import CombineOp
+from .operators import CombineOp, SingleOp
 import jax.numpy as jnp
 
 class Add(CombineOp, op=lambda x, y: jnp.add(x, y)):
@@ -11,4 +11,7 @@ class Subtract(CombineOp, op=lambda x, y: jnp.subtract(x, y)):
     pass
 
 class Divide(CombineOp, op=lambda x, y: jnp.divide(x, y)):
+    pass
+
+class Neg(SingleOp, op=lambda x: jnp.multiply(-1, x)):
     pass

@@ -1,6 +1,6 @@
 # newton's method solver 
 # for implicit runge kutta
-from tableau import ButcherTableau
+from .tableau import ButcherTableau
 from functools import partial
 
 import jax 
@@ -17,27 +17,28 @@ def jacdiag(f):
     return _jacdiag
 
 @partial(jax.jit, static_argnums=(0, ))
-def jacnd(f, x):
+def jacnd(f, t, x):
     flat, unflatten = flatten_util.ravel_pytree(x)
     # print("unflattend_shape", unflatten(flat).shape)
-    fp = lambda xi: flatten_util.ravel_pytree(f(unflatten(xi)))[0]
+    fp = lambda xi: flatten_util.ravel_pytree(f(t, unflatten(xi)))[0]
     return unflatten(jnp.diag(jax.jacfwd(fp)(flat)))
 
-@partial(jax.jit, static_argnums=(1, 2, 3))
-def newtons_method(y: jnp.ndarray, tableau: ButcherTableau, F, dt: int):
+@partial(jax.jit, static_argnums=(1, 2))
+def newtons_method(y: jnp.ndarray, tableau: ButcherTableau, F, t: int, dt: int):
     z = jnp.zeros((tableau.size, *y.shape))
 
     A_expand = jnp.expand_dims(tableau.A, 0).repeat(y.size, 0).reshape((*y.shape, *tableau.A.shape))
-    
+    t = t + tableau.c * dt
+
     # z_i' = 
-    df = jacnd(F, jnp.add(jnp.expand_dims(y, 0), z))
+    df = jacnd(F, t, jnp.add(jnp.expand_dims(y, 0), z))
     df = dt * jnp.multiply(A_expand, df.repeat(tableau.size).reshape(A_expand.shape))
     if tableau.size > 1:
         df = df.sum(-1)
 
     for i in range(3): 
         # f(z_j+y)
-        temp_f = F(jnp.add(jnp.expand_dims(y, 0), z))
+        temp_f = F(t, jnp.add(jnp.expand_dims(y, 0), z))
 
         # ref. z_i = h * sum_j(a_ij * f(y + z_j))
         f = dt * jnp.multiply(A_expand, temp_f.repeat(tableau.size).reshape(A_expand.shape))

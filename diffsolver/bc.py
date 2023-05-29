@@ -1,17 +1,17 @@
-# boundary conditions... Yay!!! (actually it's painful at best but usually downright )
+# boundary conditions... Yay!!! (actually it's painful at best but usually downright tear inducing)
 import jax.numpy as jnp
 from typing import List
-from ops.operators import Operator
+from .ops.operators import Operator
 
 class BoundaryCond(Operator):
     def __init__(self, one: Operator):
         super().__init__()
         self.one = one
 
-    def op(self, y):
+    def op(self, t, y):
         # print("op seen shape", y.shape)
         yb = self.apply_bound(y)
-        yb = self.one.op(yb)
+        yb = self.one(t, yb)
         y = self.remove_bound(yb)
         return y
 

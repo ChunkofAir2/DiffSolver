@@ -1,9 +1,9 @@
 from functools import partial
-from newton import newtons_method
-from tableau import ButcherTableau
+from .newton import newtons_method
+from .tableau import ButcherTableau
 
-from ops.operators import Operator
-from ops.lapacian import Laplacian
+from .ops.operators import Operator
+from .ops.lapacian import Laplacian
 
 import jax.numpy as jnp
 import jax.scipy.linalg as linalg
@@ -15,11 +15,12 @@ config.update("jax_enable_x64", True)
 class ImplicitRungeKutta():
     def __init__(self, y0, tableau, f: Operator, dt, solver=newtons_method):
         self.tableau = tableau
-        self.f = jax.vmap(f, 0, 0)
+        self.f = jax.vmap(f, (0, 0), 0)
         self.y = y0
-        self.dt = dt
+        self.dt = jnp.array(dt)
         self.is_inv = jnp.linalg.cond(self.tableau.A) < 1/jnp.finfo(jnp.float32).eps
         self.solver = solver
+        self.t = jnp.array(0)
         
     @partial(jax.jit, static_argnums=(0,))
     def _get_next(self, y, z, dt):
@@ -32,7 +33,8 @@ class ImplicitRungeKutta():
             else: 
                 # if A is singular, have to evaluate f manually again !!!
                 g = jnp.add(jnp.expand_dims(y, 0), z)
-                feval = self.f(g)
+                t = self.t + self.tableau.c * self.dt
+                feval = self.f(t, g)
                 feval = jnp.moveaxis(feval, -1, 0)
                 sums = jax.vmap(jnp.multiply, (0, 1), 0)(self.tableau.b, feval)
                 sums = dt * sums.sum(0).T
@@ -44,33 +46,11 @@ class ImplicitRungeKutta():
         return y + sums
     
     def _step(self, y):
-        z = self.solver(y, self.tableau, self.f, self.dt)
+        z = self.solver(y, self.tableau, self.f, self.t, self.dt)
         y = self._get_next(y, z, self.dt)
         return y
     
     def step(self):
         self.y = self._step(self.y.copy())
+        self.t += self.dt
         return self.y
-
-def test():
-    from bc import NeumannBC
-
-    nbc = NeumannBC(Laplacian(1), [0, 0])
-    y1 = jnp.expand_dims(jnp.arange(0, 5, dtype=jnp.float64), 0).repeat(2, 0)*3
-    # tableau = ButcherTableau(
-    #     jnp.array([1/9, (16+jnp.sqrt(6))/36, (16-jnp.sqrt(6))/36]), 
-    #     jnp.array([0, (16-jnp.sqrt(6))/10, (16+jnp.sqrt(6))/10]), 
-    #     jnp.array(
-    #     [[1/9, (-1-jnp.sqrt(6))/18, (-1+jnp.sqrt(6))/18],
-    #     [1/9, (88+7*jnp.sqrt(6))/360, (88-43*jnp.sqrt(6))/360],
-    #     [1/9, (88-43*jnp.sqrt(6))/360, (88-7*jnp.sqrt(6))/360]])
-    # )
-    tableau = ButcherTableau(jnp.array([1/2, 1/2]), jnp.array([0, 1]), jnp.array([[0, 0],[1/2, 1/2]]))
-    rkno1 = ImplicitRungeKutta(y1, tableau, nbc.op, 0.05)
-    print(rkno1.y)
-    for i in range(int(400/0.05)):
-    # for i in range(100):
-        rkno1.step()
-    print(rkno1.y)
-
-test()
