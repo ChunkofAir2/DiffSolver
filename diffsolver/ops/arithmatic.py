@@ -1,4 +1,4 @@
-from .operators import CombineOp, SingleOp
+from .op_tys import CombineOp, SingleOp
 import jax.numpy as jnp
 
 class Add(CombineOp, op=lambda x, y: jnp.add(x, y)):

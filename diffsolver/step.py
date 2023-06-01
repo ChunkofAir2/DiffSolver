@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 from jax import flatten_util;
+from jax import tree_map
 
 # Doesn't really work in practice for some reason 
 # so I'm just going to abandon it for now
@@ -13,7 +14,6 @@ def rms_norm(x):
     if x.size == 0:
         return 0
     return _rms_norm(x)
-
 
 class PIDController:
     def __init__(self, p_beta=0, i_beta=1, d_beta=0, rtol=1e-3, atol=1e-6, safety=0.71):
@@ -30,6 +30,17 @@ class PIDController:
         self.prev_dt = 0.05
         
         self.safety = safety
+
+    def scaled_error(self, y0, y1_candidate, ye):
+        def _scale(_y0, _y1_candidate, _y_error):
+            # In case the solver steps into a region for which the vector field isn't
+            # defined.
+            _nan = jnp.isnan(_y1_candidate).any()
+            _y1_candidate = jnp.where(_nan, _y0, _y1_candidate)
+            _y = jnp.maximum(jnp.abs(_y0), jnp.abs(_y1_candidate))
+            return _y_error / (self.atol + _y * self.rtol)
+
+        scaled_error = jnp.linalg.norm(tree_map(_scale, y0, y1_candidate, ye))
 
     def _ise(self, y, ye):
         scaled_e = jnp.linalg.norm(ye / (self.atol + y * self.rtol))

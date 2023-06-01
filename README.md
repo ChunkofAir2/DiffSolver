@@ -6,18 +6,14 @@ be ironed out.
 
 Example 1:
 ```python 
-from diffsolver.ops.laplacian import Lapacian 
-from diffsolver.rk import ImplicitRungeKutta
-from diffsolver.tableau import ButcherTableau
-from diffsolver.bc import NeumannBC
-
 import matplotlib.pyplot as plt
-
 import jax.numpy as jnp
+
+from diffsolver import *
 
 fn = NeumannBC(Laplacian(1), [0, 0])
 y1 = jnp.arange(15)
-y1 = y1 = jnp.expand_dims(y1, 0).repeat(15, 0)
+y1 = jnp.expand_dims(y1, 0).repeat(15, 0)
 
 # Implicit Euler
 tableau = ButcherTableau(jnp.array([1]), jnp.array([1]), jnp.array([1]))

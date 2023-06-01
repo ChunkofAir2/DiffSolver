@@ -1,1 +1,9 @@
-from . import arithmatic, heaviside, lapacian, operators
+from . import arithmatic, heaviside, lapacian, operators, constant, op_tys, nderiv
+
+from .operators import Operator, Variable
+from .arithmatic import Add, Subtract, Multiply, Divide
+from .lapacian import Laplacian
+from .heaviside import Heaviside
+from .constant import Constant
+from .op_tys import SingleOp, CombineOp
+from .nderiv import NDeriv

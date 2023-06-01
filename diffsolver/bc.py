@@ -1,4 +1,5 @@
 # boundary conditions... Yay!!! (actually it's painful at best but usually downright tear inducing)
+
 import jax.numpy as jnp
 from typing import List
 from .ops.operators import Operator

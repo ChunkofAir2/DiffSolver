@@ -1,5 +1,5 @@
-# newton's method solver 
-# for implicit runge kutta
+# newton's method solver for implicit runge kutta
+
 from .tableau import ButcherTableau
 from functools import partial
 
@@ -24,7 +24,8 @@ def jacnd(f, t, x):
     return unflatten(jnp.diag(jax.jacfwd(fp)(flat)))
 
 @partial(jax.jit, static_argnums=(1, 2))
-def newtons_method(y: jnp.ndarray, tableau: ButcherTableau, F, t: int, dt: int):
+def newtons_method(y: jnp.ndarray, tableau: ButcherTableau, F, t: jnp.ndarray, dt: jnp.ndarray):
+    """calculate the newton's method """
     z = jnp.zeros((tableau.size, *y.shape))
 
     A_expand = jnp.expand_dims(tableau.A, 0).repeat(y.size, 0).reshape((*y.shape, *tableau.A.shape))
