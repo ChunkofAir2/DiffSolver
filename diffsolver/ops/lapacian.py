@@ -16,6 +16,8 @@ def _1d_laplacian(y, dx, dim=0):
     return r * lefty + (-2 * r) * centrey + r * righty
 
 class Laplacian(Operator):
+    """Laplacian Operator (n-dimensional)"""
+
     def __init__(self, dx):
         super().__init__()
         self.dx = dx

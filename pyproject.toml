@@ -1,6 +1,6 @@
 [project]
 name = "DiffSolver"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="SY", email="author@example.com" },
 ]
@@ -15,7 +15,7 @@ classifiers = [
 ]
 
 [build-system]
-requires = ["hatchling", "jax"]
+requires = ["hatchling", "jax", "matplotlib"]
 build-backend = "hatchling.build"
 
 

@@ -14,9 +14,3 @@
 
 # You should have received a copy of the GNU General Public License 
 # along with DiffSolver. If not, see <https://www.gnu.org/licenses/>.
-
-
-
-# maybe turn an eq of the form:
-# d^ny/dt^n = f(x)
-# into a integratable eq. 

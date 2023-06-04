@@ -6,9 +6,22 @@ from typing import Dict
 import inspect
 
 class Operator:
+    """
+    General operator class
+
+    Other operators extends this class. Some are obvious, for example 
+    Addition, Subtraction, etc. Some are not so obvious, for example 
+    the process of adding boundary conditions. The operators are then 
+    taken by the Runge Kutta solver and used to solve the Diffeq. 
+
+    Class Variables
+
+    constant : `Object`
+        the constant that is used by the class rather than an input
+    """
+
     def __init__(self) -> None:
         self.constant = None
-        pass
 
     @partial(jax.jit, static_argnums=(0, ))
     def __call__(self, t=None, y=None):
@@ -19,8 +32,27 @@ class Operator:
     
     def set_y(self, y):
         self.constant = y
-    
+
     def set_const(self, **kwargs):
+        """Generally set the constant for both itself and its variables 
+        
+        This is a weird one because it sort of conflicts with the notion that 
+        there's already a constant variable. However, there's an important distinction 
+        between them. The "set_y" function sets the input to the `self.op` function, 
+        while the constants are parameters like `dx` or `dt` that need to be modified 
+        without being able to touch the original class (less you want to index into it)
+
+        Parameters:
+        
+        **kwargs: in the form of `"param_name" = "new_value"` or
+        `"param_name" = {"class_name": "new_value"}` 
+
+        Notes:
+        
+        This isn't the best way to deal with constants, espcially because the names 
+        could easily clash with one another. However, that is a problem for future me 
+        to deal with. For now I'm happy with just coming up with different names instead.
+        """
         for name, value in inspect.getmembers(self):
             if not name.startswith('_'):
                 if issubclass(type(value), Operator):
@@ -33,8 +65,6 @@ class Operator:
                     else :
                         setattr(self, name, kwargs[name])
     
-        # raise NotImplementedError("need to implement \"set_const\" fn")
-
     def op(self, t, y):
         raise NotImplementedError("need to implement \"op\" fn")
     

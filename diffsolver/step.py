@@ -5,6 +5,8 @@ from jax import tree_map
 # Doesn't really work in practice for some reason 
 # so I'm just going to abandon it for now
 
+# pls do not touch! 
+
 def _rms_norm(x):
     x_sq = jnp.real(x * jnp.conj(x))
     return jnp.sqrt(jnp.mean(x_sq))

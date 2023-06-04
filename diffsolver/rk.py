@@ -2,6 +2,7 @@ from functools import partial
 from .newton import newtons_method
 from .tableau import ButcherTableau
 from .ops.operators import Operator
+from .ops.nderiv import NDeriv
 
 import jax.numpy as jnp
 import jax.scipy.linalg as linalg
@@ -10,11 +11,12 @@ import jax
 # from jax import config
 # config.update("jax_enable_x64", True)
 from typing import List, Tuple
+from copy import copy
 
 class ImplicitRungeKutta():
     def __init__(self, y0, tableau: ButcherTableau, f: Operator, dt, solver=newtons_method):
         self.tableau = tableau
-        self.f = jax.vmap(f, (0, 0), 0)
+        self.f = jax.vmap(f, (None, 0), 0)
         self.y = y0
         self.dt = jnp.array(dt)
         if self.tableau.size > 1:
@@ -22,28 +24,36 @@ class ImplicitRungeKutta():
         self.solver = solver
         self.t = jnp.array(0)
         
-    @partial(jax.jit, static_argnums=(0, ))
+    # @partial(jax.jit, static_argnums=(0, ))
     def _get_next(self, y, z, dt):
         if self.tableau.size > 1:
             if self.is_inv:
                 # if A is invertable, go the faster route
-                A_inv = linalg.inv(self.tableau.A) 
-                d = jnp.expand_dims(jnp.matmul(self.tableau.b, A_inv), 0).repeat(y.size, 0).reshape((-1, *z.shape[1:]))
-                sums = jnp.sum(jax.vmap(jnp.multiply)(d, z), 0)
+                # A_inv = jax.numpy.linalg.pinv(self.tableau.A)
+                A_inv = linalg.inv(self.tableau.A).transpose() 
+                d = jnp.matmul(self.tableau.b, A_inv)
+                d = jnp.expand_dims(d, 1).repeat(y.size, 1).reshape((-1, *z.shape[1:]))
+                # print(d)
+                # print(z)
+                sums = jnp.sum(jnp.multiply(d, z), 0)
+                # print(sums)
             else: 
                 # if A is singular, have to evaluate f manually again !!!
+                # print(y.shape)
+                # print(z.shape)
                 g = jnp.add(jnp.expand_dims(y, 0), z)
                 t = self.t + self.tableau.c * self.dt
                 feval = self.f(t, g)
+
                 # feval = jnp.moveaxis(feval, -1, 0)
                 sums = jax.vmap(jnp.multiply, (0, 0), 0)(self.tableau.b, feval)
-                sums = dt * sums.sum(0)
+                sums = sums.sum(0) * dt
         else:
-            d = jnp.matmul(self.tableau.b, self.tableau.A).repeat(y.size).reshape((-1, *z.shape[1:]))
+            d = jnp.matmul(self.tableau.b, 1/self.tableau.A).repeat(y.size).reshape((-1, *z.shape[1:]))
             z = z.squeeze(0)
             sums = jnp.multiply(d, z)
             sums = sums.reshape(y.shape)
-        return y + sums
+        return y + sums 
     
     def _step(self, y):
         z = self.solver(y, self.tableau, self.f, self.t, self.dt)

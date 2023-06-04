@@ -1,6 +1,8 @@
 from .op_tys import CombineOp, SingleOp
 import jax.numpy as jnp
 
+# Very self explainatory
+
 class Add(CombineOp, op=lambda x, y: jnp.add(x, y)):
     pass
 

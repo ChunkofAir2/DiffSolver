@@ -26,35 +26,40 @@ def jacnd(f, t, x):
 @partial(jax.jit, static_argnums=(1, 2))
 def newtons_method(y: jnp.ndarray, tableau: ButcherTableau, F, t: jnp.ndarray, dt: jnp.ndarray):
     """calculate the newton's method """
-    z = jnp.zeros((tableau.size, *y.shape))
+    z = jnp.ones((tableau.size, *y.shape))
 
-    A_expand = jnp.expand_dims(tableau.A, 0).repeat(y.size, 0).reshape((*y.shape, *tableau.A.shape))
+    A_expand = jnp.expand_dims(tableau.A, -1).repeat(y.size, -1).reshape((*tableau.A.shape, *y.shape))
+     
     t = t + tableau.c * dt
 
-    # z_i' = 
-    df = jacnd(F, t, jnp.add(jnp.expand_dims(y, 0), z))
-    df = dt * jnp.multiply(A_expand, df.repeat(tableau.size).reshape(A_expand.shape))
-    if tableau.size > 1:
-        df = df.sum(-1)
+    for i in range(35):
+        # z_i' = 
+        next_g = jnp.add(jnp.expand_dims(y, 0), z)
+        df = jacnd(F, t, next_g)
+        if tableau.size > 1:
+            df = jnp.expand_dims(df, 0).repeat(tableau.size, 0)
+        df = dt * jnp.multiply(A_expand, df)
+        if tableau.size > 1:
+            df = df.sum(1)
+            
+        # because derivative of z w.r.t. z is one
+        df = df - 1 
 
-    for i in range(3): 
         # f(z_j+y)
-        temp_f = F(t, jnp.add(jnp.expand_dims(y, 0), z))
+        temp_f = F(t, next_g)
+        if tableau.size > 1:
+            temp_f = jnp.expand_dims(temp_f, 0).repeat(tableau.size, 0)
 
         # ref. z_i = h * sum_j(a_ij * f(y + z_j))
-        f = dt * jnp.multiply(A_expand, temp_f.repeat(tableau.size).reshape(A_expand.shape))
+        f = dt * jnp.multiply(A_expand, temp_f)
         if tableau.size > 1:
-            f = f.sum(-1)
-
+            f = f.sum(0)
         # solve for f(z) - z = 0
         # znext = z -(f-z)/(f-z)'
-        f -= jnp.moveaxis(z, 0, -1)
-
-        # because derivative of z w.r.t. z is one
-        df -= 1
+        f = f - z 
 
         diff = jnp.where(jnp.logical_and(f == 0, df == 0), 0, (f/df))
-        z = z - jnp.moveaxis(diff, -1, 0)
+        z = z - diff
     return z
 
 
